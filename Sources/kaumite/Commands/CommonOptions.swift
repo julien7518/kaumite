@@ -6,7 +6,6 @@
 //
 
 import ArgumentParser
-import Foundation
 
 enum CommitLanguage: String, ExpressibleByArgument, CaseIterable {
     case english = "en"

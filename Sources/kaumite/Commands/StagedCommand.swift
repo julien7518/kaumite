@@ -6,7 +6,6 @@
 //
 
 import ArgumentParser
-import Foundation
 
 struct StagedCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -18,14 +17,20 @@ struct StagedCommand: AsyncParsableCommand {
     var options: CommonOptions
 
     func run() async throws {
-        let message = "feat: update staged files"
-
-        ConsoleOutput.printCommitMessage(message, options.lang)
-
+        let consoleOutput = ConsoleOutput(useColors: !options.noColor)
+        let gitService = GitService()
+        
+        let message = "chore: update project files"
+        consoleOutput.printCommitMessage(message, options.lang)
+        
         if options.dryRun {
             return
         }
 
-        print("Creating commit... (staged)")
+        do {
+            try gitService.commit(message: message)
+        } catch {
+            consoleOutput.printError(error.localizedDescription)
+        }
     }
 }

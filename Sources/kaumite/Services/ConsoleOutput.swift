@@ -49,8 +49,7 @@ struct ConsoleOutput {
     {
         if useColors {
             return "\(color)\(label)\(Color.reset): \(message)"
-        }
-        else {
+        } else {
             return "\(label): \(message)"
         }
     }

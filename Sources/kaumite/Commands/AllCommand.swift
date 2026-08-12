@@ -6,7 +6,6 @@
 //
 
 import ArgumentParser
-import Foundation
 
 struct AllCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -18,16 +17,21 @@ struct AllCommand: AsyncParsableCommand {
     var options: CommonOptions
 
     func run() async throws {
-        let message = "chore: update project files"
-
-        let output = ConsoleOutput(useColors: !options.noColor)
+        let consoleOutput = ConsoleOutput(useColors: !options.noColor)
+        let gitService = GitService()
         
-        output.printCommitMessage(message, options.lang)
-
+        let message = "chore: update project files"
+        consoleOutput.printCommitMessage(message, options.lang)
+        
         if options.dryRun {
             return
         }
 
-        print("Creating commit... (all)")
+        do {
+            try gitService.addAll()
+            try gitService.commit(message: message)
+        } catch {
+            consoleOutput.printError(error.localizedDescription)
+        }
     }
 }
