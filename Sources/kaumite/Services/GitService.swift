@@ -12,6 +12,7 @@ struct GitService {
         case commandFailed(command: String, exitCode: Int32, message: String)
         case notARepository
         case noChanges(_ onlyStaged: Bool = false)
+        case detachedHead
 
         var errorDescription: String? {
             switch self {
@@ -26,6 +27,9 @@ struct GitService {
                     return "There are no staged changes."
                 }
                 return "There are no staged or unstaged changes."
+
+            case .detachedHead:
+                return "The current Git repository has a detached head."
             }
         }
     }
@@ -88,11 +92,11 @@ struct GitService {
 
     func stagedDiff() throws -> String {
         let staged = try run(["diff", "--cached", "--no-ext-diff"])
-        
+
         if staged.isEmpty {
             throw GitError.noChanges(true)
         }
-        
+
         return staged
     }
 
@@ -116,7 +120,7 @@ struct GitService {
     func addAll() throws {
         _ = try run(["add", "."])
     }
-    
+
     func commit(message: String, amend: Bool = false) throws {
         var arguments = ["commit"]
         if amend {
@@ -125,5 +129,19 @@ struct GitService {
         arguments += ["-m", message]
 
         _ = try run(arguments)
+    }
+
+    func currentCommitID() throws -> String {
+        return try run(["rev-parse", "--short", "HEAD"])
+    }
+
+    func currentBranch() throws -> String {
+        let branch = try run(["branch", "--show-current"])
+
+        if branch.isEmpty {
+            throw GitError.detachedHead
+        }
+
+        return branch
     }
 }

@@ -32,7 +32,9 @@ struct StagedCommand: AsyncParsableCommand {
             }
 
             try gitService.commit(message: message)
-            print("Commit created !")
+            let commitID = try gitService.currentCommitID()
+            let currentBranch = try gitService.currentBranch()
+            print("Commit \(commitID) created on \(currentBranch)")
         } catch {
             consoleOutput.printError(error.localizedDescription)
         }
