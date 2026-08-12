@@ -30,11 +30,17 @@ struct CommonOptions: ParsableArguments {
         name: .long,
         help: "Display the generated commit message without creating a commit."
     )
-    var dryRun = false
+    var dryRun: Bool = false
 
     @Option(
         name: [.long, .customShort("l")],
         help: "Language used to generate the commit message."
     )
     var lang: CommitLanguage = .english
+
+    @Flag(
+        name: .long,
+        help: "Amend the latest Git commit instead of creating a new one."
+    )
+    var amend: Bool = false
 }
