@@ -19,16 +19,20 @@ struct StagedCommand: AsyncParsableCommand {
     func run() async throws {
         let consoleOutput = ConsoleOutput(useColors: !options.noColor)
         let gitService = GitService()
-        
-        let message = "chore: update project files"
-        consoleOutput.printCommitMessage(message, options.lang)
-        
-        if options.dryRun {
-            return
-        }
+        let generator = MessageGenerator()
 
         do {
+            let diff = try gitService.stagedDiff()
+
+            let message = try await generator.generateCommitMessage(diff: diff, lang: options.lang)
+            consoleOutput.printCommitMessage(message, options.lang)
+
+            if options.dryRun {
+                return
+            }
+
             try gitService.commit(message: message)
+            print("Commit created !")
         } catch {
             consoleOutput.printError(error.localizedDescription)
         }

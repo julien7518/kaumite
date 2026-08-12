@@ -17,9 +17,9 @@ enum CommitLanguage: String, ExpressibleByArgument, CaseIterable {
         case .english:
             return "English"
         case .french:
-            return "Français"
+            return "French"
         case .german:
-            return "Deutsch"
+            return "German"
         }
     }
 }

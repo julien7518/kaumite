@@ -11,7 +11,7 @@ struct GitService {
     enum GitError: LocalizedError {
         case commandFailed(command: String, exitCode: Int32, message: String)
         case notARepository
-        case noChanges
+        case noChanges(_ onlyStaged: Bool = false)
 
         var errorDescription: String? {
             switch self {
@@ -21,7 +21,10 @@ struct GitService {
             case .notARepository:
                 return "The current directory is not a Git repository"
 
-            case .noChanges:
+            case .noChanges(let staged):
+                if staged {
+                    return "There are no staged changes."
+                }
                 return "There are no staged or unstaged changes."
             }
         }
@@ -84,7 +87,13 @@ struct GitService {
     }
 
     func stagedDiff() throws -> String {
-        try run(["diff", "--cached", "--no-ext-diff"])
+        let staged = try run(["diff", "--cached", "--no-ext-diff"])
+        
+        if staged.isEmpty {
+            throw GitError.noChanges(true)
+        }
+        
+        return staged
     }
 
     func stagedAndUnstagedDiff() throws -> String {
@@ -92,7 +101,7 @@ struct GitService {
         let unstaged = try run(["diff", "--no-ext-diff"])
 
         if staged.isEmpty && unstaged.isEmpty {
-            throw GitError.noChanges
+            throw GitError.noChanges()
         }
 
         return """

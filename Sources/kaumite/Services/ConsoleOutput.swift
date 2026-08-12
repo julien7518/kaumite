@@ -21,7 +21,7 @@ struct ConsoleOutput {
         _ language: CommitLanguage
     ) {
         print("Commit language: \(language.displayName)\n")
-        print("--- Commit message ---\n\(message)\n")
+        print("--- Commit message ---\n\(message)\n----------------------")
     }
 
     func printWarning(_ message: String) {
