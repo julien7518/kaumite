@@ -43,4 +43,10 @@ struct CommonOptions: ParsableArguments {
         help: "Amend the latest Git commit instead of creating a new one."
     )
     var amend: Bool = false
+
+    @Flag(
+        name: .long,
+        help: "Disable colored terminal output."
+    )
+    var noColor = false
 }

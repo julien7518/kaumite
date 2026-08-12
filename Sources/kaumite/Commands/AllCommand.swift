@@ -20,7 +20,9 @@ struct AllCommand: AsyncParsableCommand {
     func run() async throws {
         let message = "chore: update project files"
 
-        ConsoleOutput.printCommitMessage(message, options.lang)
+        let output = ConsoleOutput(useColors: !options.noColor)
+        
+        output.printCommitMessage(message, options.lang)
 
         if options.dryRun {
             return
