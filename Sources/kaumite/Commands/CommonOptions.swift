@@ -6,7 +6,6 @@
 //
 
 import ArgumentParser
-import Foundation
 
 enum CommitLanguage: String, ExpressibleByArgument, CaseIterable {
     case english = "en"
@@ -18,9 +17,9 @@ enum CommitLanguage: String, ExpressibleByArgument, CaseIterable {
         case .english:
             return "English"
         case .french:
-            return "Français"
+            return "French"
         case .german:
-            return "Deutsch"
+            return "German"
         }
     }
 }
@@ -43,4 +42,10 @@ struct CommonOptions: ParsableArguments {
         help: "Amend the latest Git commit instead of creating a new one."
     )
     var amend: Bool = false
+
+    @Flag(
+        name: .long,
+        help: "Disable colored terminal output."
+    )
+    var noColor = false
 }

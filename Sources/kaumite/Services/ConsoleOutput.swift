@@ -7,34 +7,54 @@
 
 import Foundation
 
-enum ConsoleOutput {
+struct ConsoleOutput {
+    let useColors: Bool
+
     private enum Color {
         static let yellow = "\u{001B}[33m"
         static let red = "\u{001B}[31m"
         static let reset = "\u{001B}[0m"
     }
 
-    static func printCommitMessage(
+    func printCommitMessage(
         _ message: String,
         _ language: CommitLanguage
     ) {
         print("Commit language: \(language.displayName)\n")
-        print("--- Commit message ---\n\(message)\n")
+        print("--- Commit message ---\n\(message)\n----------------------")
     }
 
-    static func printWarning(_ message: String) {
+    func printWarning(_ message: String) {
         printToStandardError(
-            "\(Color.yellow)WARNING\(Color.reset): \(message)"
+            formatLabel(
+                label: "WARNING",
+                message: message,
+                color: Color.yellow
+            )
         )
     }
 
-    static func printError(_ message: String) {
+    func printError(_ message: String) {
         printToStandardError(
-            "\(Color.red)ERROR\(Color.reset): \(message)"
+            formatLabel(
+                label: "ERROR",
+                message: message,
+                color: Color.red
+            )
         )
     }
 
-    private static func printToStandardError(_ message: String) {
+    private func formatLabel(label: String, message: String, color: String)
+        -> String
+    {
+        if useColors {
+            return "\(color)\(label)\(Color.reset): \(message)"
+        } else {
+            return "\(label): \(message)"
+        }
+    }
+
+    private func printToStandardError(_ message: String) {
         FileHandle.standardError.write(
             Data("\(message)\n".utf8)
         )
