@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build project (release mode)
+        run: swift build -c release -v
+
+      - name: Run tests
+        run: swift test -v
+
+      # --- Extraction de la version depuis CHANGELOG.md ---
+      - name: Extract version from CHANGELOG.md
+        id: version
+        run: |
+          VERSION=$(grep -E '^## v[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -n 1 | sed -E 's/## (v[0-9]+\.[0-9]+\.[0-9]+)/\1/')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Impossible de trouver une version dans CHANGELOG.md"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # --- Vérifie si le tag existe déjà ---
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # --- Crée le tag si inexistant ---
+      - name: Create tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "${{ steps.version.outputs.version }}" -m "Release ${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
+
+      # --- Localise le binaire compilé ---
+      - name: Find binary path
+        id: binary
+        run: |
+          BINARY_PATH=$(find .build/release -type f -executable -name "kaumite" -o -name "Kaumite" | head -n 1)
+          if [ -z "$BINARY_PATH" ]; then
+            echo "::error::Binaire introuvable dans .build/release/"
+            exit 1
+          fi
+          echo "path=$BINARY_PATH" >> $GITHUB_OUTPUT
+
+      # --- Crée la release et attache le binaire ---
+      - name: Create Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ steps.version.outputs.version }}"
+          name: "Kaumite ${{ steps.version.outputs.version }}"
+          body: |
+            $(awk '/## ${{ steps.version.outputs.version }}/{flag=1; next} /^## /{flag=0} flag' CHANGELOG.md | sed '/^## /d')
+          files: |
+            ${{ steps.binary.outputs.path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
