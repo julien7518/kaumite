@@ -21,10 +21,24 @@ struct AllCommand: AsyncParsableCommand {
         let gitService = GitService()
         let generator = MessageGenerator()
 
+        var loadingTask: Task<Void, Never>?
+
         do {
             let diff = try gitService.stagedAndUnstagedDiff()
-            let message = try await generator.generateCommitMessage(diff: diff, lang: options.lang)
-            
+            loadingTask = consoleOutput.startLoading(
+                "Generating"
+            )
+            let message = try await generator.generateCommitMessage(
+                diff: diff,
+                lang: options.lang
+            )
+
+            if let loadingTask {
+                loadingTask.cancel()
+                await loadingTask.value
+                consoleOutput.stopLoading()
+            }
+
             consoleOutput.printCommitMessage(message, options.lang)
 
             if options.dryRun {
@@ -37,6 +51,12 @@ struct AllCommand: AsyncParsableCommand {
             let currentBranch = try gitService.currentBranch()
             print("Commit \(commitID) created on \(currentBranch)")
         } catch {
+            if let loadingTask {
+                loadingTask.cancel()
+                await loadingTask.value
+                consoleOutput.stopLoading()
+            }
+
             consoleOutput.printError(error.localizedDescription)
         }
     }
