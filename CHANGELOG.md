@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.1
+
+**✨ Kaumite v1.0.1 - Smoother Command Experience**
+
+This release improves the command-line experience and simplifies the internal command architecture.
+
+**What's new:**
+✅ Added a loading spinner while generating commit messages
+✅ Refactored command execution into a shared runner
+✅ Reduced duplicated code between staged and all-change commands
+✅ Improved code organization and maintainability
+
 ## v1.0.0
 
 **🚀 Kaumite v1.0.0 - Local-First AI Commit Messages**
