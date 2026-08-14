@@ -8,7 +8,8 @@ on:
 jobs:
   release:
     if: github.event.pull_request.merged == true
-    runs-on: macos-latest
+    runs-on: macos-26
+
     permissions:
       contents: write
 
@@ -18,64 +19,127 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build project (release mode)
-        run: swift build -c release -v
+      - name: Build project
+        run: swift build -c release
 
       - name: Run tests
-        run: swift test -v
+        run: swift test
 
-      # --- Extraction de la version depuis CHANGELOG.md ---
+      # ─────────────────────────────────────────────
+      # Version
+      # ─────────────────────────────────────────────
+
       - name: Extract version from CHANGELOG.md
         id: version
         run: |
-          VERSION=$(grep -E '^## v[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -n 1 | sed -E 's/## (v[0-9]+\.[0-9]+\.[0-9]+)/\1/')
-          if [ -z "$VERSION" ]; then
-            echo "::error::Impossible de trouver une version dans CHANGELOG.md"
-            exit 1
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(grep -E '^## v[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md \
+            | head -n 1 \
+            | sed -E 's/## (v[0-9]+\.[0-9]+\.[0-9]+)/\1/')
 
-      # --- Vérifie si le tag existe déjà ---
+          if [ -z "$VERSION" ]; then
+            echo "No version found in CHANGELOG.md."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Found version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+      # ─────────────────────────────────────────────
+      # Vérification du tag
+      # ─────────────────────────────────────────────
+
       - name: Check if tag exists
+        if: steps.version.outputs.release == 'true'
         id: check_tag
         run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
+          if git rev-parse "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag does not exist."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # --- Crée le tag si inexistant ---
+      # ─────────────────────────────────────────────
+      # Création du tag
+      # ─────────────────────────────────────────────
+
       - name: Create tag
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.version.outputs.release == 'true' && steps.check_tag.outputs.exists == 'false'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a "${{ steps.version.outputs.version }}" -m "Release ${{ steps.version.outputs.version }}"
+
+          git tag -a "${{ steps.version.outputs.version }}" \
+            -m "Release ${{ steps.version.outputs.version }}"
+
           git push origin "${{ steps.version.outputs.version }}"
 
-      # --- Localise le binaire compilé ---
-      - name: Find binary path
-        id: binary
-        run: |
-          BINARY_PATH=$(find .build/release -type f -executable -name "kaumite" -o -name "Kaumite" | head -n 1)
-          if [ -z "$BINARY_PATH" ]; then
-            echo "::error::Binaire introuvable dans .build/release/"
-            exit 1
-          fi
-          echo "path=$BINARY_PATH" >> $GITHUB_OUTPUT
+      # ─────────────────────────────────────────────
+      # Préparation du binaire
+      # ─────────────────────────────────────────────
 
-      # --- Crée la release et attache le binaire ---
-      - name: Create Release
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v1
+      - name: Prepare binary
+        if: steps.version.outputs.release == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          cp .build/release/kaumite \
+            "kaumite-${{ steps.version.outputs.version }}-macos-arm64"
+
+      # ─────────────────────────────────────────────
+      # SHA256
+      # ─────────────────────────────────────────────
+
+      - name: Calculate SHA256
+        if: steps.version.outputs.release == 'true' && steps.check_tag.outputs.exists == 'false'
+        id: checksum
+        run: |
+          SHA256=$(shasum -a 256 \
+            "kaumite-${{ steps.version.outputs.version }}-macos-arm64" \
+            | awk '{print $1}')
+
+          echo "SHA256: $SHA256"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+      # ─────────────────────────────────────────────
+      # Release notes
+      # ─────────────────────────────────────────────
+
+      - name: Extract release notes
+        if: steps.version.outputs.release == 'true' && steps.check_tag.outputs.exists == 'false'
+        id: notes
+        run: |
+          NOTES=$(awk '
+            /^## ${{ steps.version.outputs.version }}/ {
+              flag=1
+              next
+            }
+            /^## / {
+              flag=0
+            }
+            flag
+          ' CHANGELOG.md)
+
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # ─────────────────────────────────────────────
+      # GitHub Release
+      # ─────────────────────────────────────────────
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.release == 'true' && steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "${{ steps.version.outputs.version }}"
+          tag_name: ${{ steps.version.outputs.version }}
           name: "Kaumite ${{ steps.version.outputs.version }}"
-          body: |
-            $(awk '/## ${{ steps.version.outputs.version }}/{flag=1; next} /^## /{flag=0} flag' CHANGELOG.md | sed '/^## /d')
+          body: ${{ steps.notes.outputs.notes }}
           files: |
-            ${{ steps.binary.outputs.path }}
+            kaumite-${{ steps.version.outputs.version }}-macos-arm64
           draft: false
           prerelease: false
         env:

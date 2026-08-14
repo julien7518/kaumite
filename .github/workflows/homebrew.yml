@@ -1,0 +1,21 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-homebrew:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Homebrew tap update
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          gh api \
+            --method POST \
+            /repos/julien7518/homebrew-tap/dispatches \
+            -f event_type=kaumite-release \
+            -f "client_payload[version]=$VERSION"
