@@ -9,7 +9,7 @@ import Foundation
 
 struct Runner {
     let options: CommonOptions
-    
+
     func run(diffFunc: () throws -> String) async throws {
         let consoleOutput = ConsoleOutput(useColors: !options.noColor)
         let gitService = GitService()

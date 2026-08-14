@@ -44,28 +44,28 @@ struct ConsoleOutput {
         )
     }
 
-    func startLoading(_ message: String) -> Task<Void, Never>{
+    func startLoading(_ message: String) -> Task<Void, Never> {
         let symbols = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        
+
         return Task {
             var index = 0
-            
+
             while !Task.isCancelled {
                 let symbol = symbols[index % symbols.count]
-                
+
                 writeToStandardError("\r\(symbol) \(message)")
-                
+
                 index += 1
-                
+
                 try? await Task.sleep(nanoseconds: 100_000_000)
             }
         }
     }
-    
+
     func stopLoading() {
         writeToStandardError("\r\u{001B}[K")
     }
-    
+
     private func formatLabel(label: String, message: String, color: String)
         -> String
     {

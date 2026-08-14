@@ -19,7 +19,7 @@ struct AllCommand: AsyncParsableCommand {
     func run() async throws {
         let gitService = GitService()
         let runner = Runner(options: options)
-        
+
         try await runner.run(diffFunc: gitService.stagedAndUnstagedDiff)
     }
 }
