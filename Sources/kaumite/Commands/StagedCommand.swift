@@ -17,26 +17,9 @@ struct StagedCommand: AsyncParsableCommand {
     var options: CommonOptions
 
     func run() async throws {
-        let consoleOutput = ConsoleOutput(useColors: !options.noColor)
         let gitService = GitService()
-        let generator = MessageGenerator()
+        let runner = Runner(options: options)
 
-        do {
-            let diff = try gitService.stagedDiff()
-
-            let message = try await generator.generateCommitMessage(diff: diff, lang: options.lang)
-            consoleOutput.printCommitMessage(message, options.lang)
-
-            if options.dryRun {
-                return
-            }
-
-            try gitService.commit(message: message)
-            let commitID = try gitService.currentCommitID()
-            let currentBranch = try gitService.currentBranch()
-            print("Commit \(commitID) created on \(currentBranch)")
-        } catch {
-            consoleOutput.printError(error.localizedDescription)
-        }
+        try await runner.run(diffFunc: gitService.stagedDiff)
     }
 }

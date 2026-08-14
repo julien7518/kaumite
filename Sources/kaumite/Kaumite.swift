@@ -8,7 +8,7 @@ struct Kaumite: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "kaumite",
         abstract: "Generate Git commit messages with Apple Foundation Models.",
-        version: "1.0.0",
+        version: "1.0.1",
 
         subcommands: [
             AllCommand.self,
