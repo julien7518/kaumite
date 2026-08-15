@@ -90,6 +90,13 @@ struct GitService {
         )
     }
 
+    func checkGitReposirtory() throws {
+        _ = try run([
+            "rev-parse",
+            "--is-inside-work-tree",
+        ])
+    }
+
     func stagedDiff() throws -> String {
         let staged = try run(["diff", "--cached", "--no-ext-diff"])
 

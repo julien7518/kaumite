@@ -4,18 +4,37 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version"
+        required: true
+        type: string
+
 jobs:
   update-homebrew:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Determine version
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          MANUAL_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "version=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$MANUAL_VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Trigger Homebrew tap update
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh api \
             --method POST \
-            /repos/julien7518/homebrew-tap/dispatches \
+            "/repos/julien7518/homebrew-tap/dispatches" \
             -f event_type=kaumite-release \
             -f "client_payload[version]=$VERSION"
