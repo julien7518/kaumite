@@ -18,6 +18,8 @@ struct Runner {
         var loadingTask: Task<Void, Never>?
 
         do {
+            try gitService.checkGitReposirtory()
+            
             let diff = try diffFunc()
             loadingTask = consoleOutput.startLoading(
                 "Generating"

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.2
+
+**🛠️ Kaumite v1.0.2 - Improved Git Repository Error Handling**
+
+This patch release improves error handling when running Kaumite outside a Git repository.
+
+**What's fixed:**
+✅ Detects when the current directory is not a Git repository
+✅ Displays a clear and user-friendly error message
+✅ Prevents invalid git diff commands from being executed
+✅ Avoids exposing confusing Git --no-index errors
+
 ## v1.0.1
 
 **✨ Kaumite v1.0.1 - Smoother Command Experience**
