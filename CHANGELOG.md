@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.3
+
+**🔧 Kaumite v1.0.3 - Verbose Mode & Context Validation**
+
+This release adds debugging capabilities and smarter diff handling.
+
+**What's new:**
+✅ Added `--verbose` flag for detailed step-by-step output
+✅ Context size validation — rejects diffs too large for the model
+✅ Added `--amend` support for the `all` command
+✅ Improved separation between staged and all-changes command logic
+
 ## v1.0.2
 
 **🛠️ Kaumite v1.0.2 - Improved Git Repository Error Handling**
