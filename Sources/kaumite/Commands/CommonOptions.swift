@@ -48,4 +48,10 @@ struct CommonOptions: ParsableArguments {
         help: "Disable colored terminal output."
     )
     var noColor = false
+    
+    @Flag(
+        name: .long,
+        help: "Show verbose output."
+    )
+    var verbose: Bool = false
 }

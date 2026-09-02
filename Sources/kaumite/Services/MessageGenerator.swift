@@ -1,10 +1,3 @@
-//
-//  MessageGenerator.swift
-//  kaumite
-//
-//  Created by Julien Fernandes on 12/08/2026.
-//
-
 import Foundation
 import FoundationModels
 
@@ -12,6 +5,7 @@ struct MessageGenerator {
     enum GeneratorError: LocalizedError {
         case unavailable(String)
         case unableToGenerate(String)
+        case outOfContext
 
         var errorDescription: String? {
             switch self {
@@ -19,6 +13,8 @@ struct MessageGenerator {
                 return "Apple Foundation Model is unavailable: \(message)"
             case .unableToGenerate(let message):
                 return "Unable to generate message: \(message)"
+            case .outOfContext:
+                return "Your git diff is too large to be analyzed"
             }
         }
     }
@@ -33,8 +29,6 @@ struct MessageGenerator {
                 String(describing: model.availability)
             )
         }
-
-        let session = LanguageModelSession(model: model)
 
         let prompt = """
             You are an expert Git commit message generator.
@@ -95,6 +89,27 @@ struct MessageGenerator {
 
             \(diff)
             """
+
+        let maxTokenContextSize = model.contextSize
+
+        let promptTokenSize: Int
+
+        if #available(macOS 26.4, *) {
+            promptTokenSize = try await model.tokenCount(for: prompt)
+        } else {
+            throw GeneratorError.unavailable(
+                "Token counting requires macOS 26.4 or newer"
+            )
+        }
+
+        let reservedOutputTokens = 512
+
+        guard promptTokenSize + reservedOutputTokens <= maxTokenContextSize
+        else {
+            throw GeneratorError.outOfContext
+        }
+
+        let session = LanguageModelSession(model: model)
 
         do {
             let response = try await session.respond(to: prompt)
