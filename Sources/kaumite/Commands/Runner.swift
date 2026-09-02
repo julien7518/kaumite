@@ -9,18 +9,34 @@ import Foundation
 
 struct Runner {
     let options: CommonOptions
+    let allCommand: Bool
 
     func run(diffFunc: () throws -> String) async throws {
         let consoleOutput = ConsoleOutput(useColors: !options.noColor)
+        let verbose = options.verbose
         let gitService = GitService()
         let generator = MessageGenerator()
 
         var loadingTask: Task<Void, Never>?
 
         do {
+            if verbose {
+                print("Checking git repository...", terminator: "")
+            }
+
             try gitService.checkGitReposirtory()
-            
+
+            if verbose {
+                print("OK")
+                print("Checking for changes...", terminator: "")
+            }
+
             let diff = try diffFunc()
+
+            if verbose {
+                print("OK")
+            }
+
             loadingTask = consoleOutput.startLoading(
                 "Generating"
             )
@@ -41,8 +57,22 @@ struct Runner {
                 return
             }
 
-            try gitService.addAll()
-            try gitService.commit(message: message)
+            if allCommand {
+                if verbose {
+                    print("Adding all files...", terminator: "")
+                }
+                try gitService.addAll()
+                if verbose {
+                    print("OK")
+                    print("Commiting...", terminator: "")
+                }
+            }
+            try gitService.commit(message: message, amend: options.amend)
+            
+            if verbose {
+                print("OK")
+            }
+            
             let commitID = try gitService.currentCommitID()
             let currentBranch = try gitService.currentBranch()
             print("Commit \(commitID) created on \(currentBranch)")
